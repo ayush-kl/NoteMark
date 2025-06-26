@@ -5,11 +5,11 @@ declare global {
     // electron: ElectronAPI
     context: {
       locale: string
-      getNotes: GetNotes
-      readNote: ReadNote
-      writeNote: WriteNote
-      createNote: CreateNote
-      deleteNote: DeleteNote
+      getInvoices: GetNotes
+      readInvoice: ReadNote
+      writeInvoice: WriteNote
+      createInvoice: CreateNote
+      deleteInvoice: DeleteNote
     }
   }
 }

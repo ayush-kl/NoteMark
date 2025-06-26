@@ -1,121 +1,79 @@
-import { appDirectoryName, fileEncoding, welcomeNoteFilename } from '@shared/constants'
-import { NoteInfo } from '@shared/models'
-import { CreateNote, DeleteNote, GetNotes, ReadNote, WriteNote } from '@shared/types'
-import { dialog } from 'electron'
-import { ensureDir, readFile, readdir, remove, stat, writeFile } from 'fs-extra'
-import { isEmpty } from 'lodash'
-import { homedir } from 'os'
-import path from 'path'
-import welcomeNoteFile from '../../../resources/welcomeNote.md?asset'
+import { ensureDir, readFile, writeFile, readdir, remove, stat } from 'fs-extra';
+import { dialog } from 'electron';
+import { homedir } from 'os';
+import path from 'path';
+import { fileEncoding } from '@shared/constants';
 
-export const getRootDir = () => {
-  return `${homedir()}/${appDirectoryName}`
-}
+const appDirectoryName = 'dawaiInvoices';
 
-export const getNotes: GetNotes = async () => {
-  const rootDir = getRootDir()
+export const getRootDir = () => path.join(homedir(), appDirectoryName);
 
-  await ensureDir(rootDir)
+export const getInvoices = async () => {
+  const dir = getRootDir();
+  await ensureDir(dir);
 
-  const notesFileNames = await readdir(rootDir, {
-    encoding: fileEncoding,
-    withFileTypes: false
-  })
+  const files = (await readdir(dir)).filter(f => f.endsWith('.json'));
 
-  const notes = notesFileNames.filter((fileName) => fileName.endsWith('.md'))
+  return Promise.all(
+    files.map(async (file) => {
+      const stats = await stat(path.join(dir, file));
+      return {
+        title: file.replace(/\.json$/, ''),
+        lastEditTime: stats.mtimeMs
+      };
+    })
+  );
+};
 
-  if (isEmpty(notes)) {
-    console.info('No notes found, creating a welcome note')
+export const readInvoice = async (filename: string) => {
+  const fullPath = path.join(getRootDir(), `${filename}.json`);
+  return readFile(fullPath, { encoding: fileEncoding });
+};
 
-    const content = await readFile(welcomeNoteFile, { encoding: fileEncoding })
+export const writeInvoice = async (filename: string, content: string) => {
+  const fullPath = path.join(getRootDir(), `${filename}.json`);
+  await ensureDir(getRootDir());
+  return writeFile(fullPath, content, { encoding: fileEncoding });
+};
 
-    // create the welcome note
-    await writeFile(`${rootDir}/${welcomeNoteFilename}`, content, { encoding: fileEncoding })
-
-    notes.push(welcomeNoteFilename)
-  }
-
-  return Promise.all(notes.map(getNoteInfoFromFilename))
-}
-
-export const getNoteInfoFromFilename = async (filename: string): Promise<NoteInfo> => {
-  const fileStats = await stat(`${getRootDir()}/${filename}`)
-
-  return {
-    title: filename.replace(/\.md$/, ''),
-    lastEditTime: fileStats.mtimeMs
-  }
-}
-
-export const readNote: ReadNote = async (filename) => {
-  const rootDir = getRootDir()
-
-  return readFile(`${rootDir}/${filename}.md`, { encoding: fileEncoding })
-}
-
-export const writeNote: WriteNote = async (filename, content) => {
-  const rootDir = getRootDir()
-
-  console.info(`Writing note ${filename}`)
-  return writeFile(`${rootDir}/${filename}.md`, content, { encoding: fileEncoding })
-}
-
-export const createNote: CreateNote = async () => {
-  const rootDir = getRootDir()
-
-  await ensureDir(rootDir)
+export const createInvoice = async () => {
+  const dir = getRootDir();
+  await ensureDir(dir);
 
   const { filePath, canceled } = await dialog.showSaveDialog({
-    title: 'New note',
-    defaultPath: `${rootDir}/Untitled.md`,
-    buttonLabel: 'Create',
-    properties: ['showOverwriteConfirmation'],
-    showsTagField: false,
-    filters: [{ name: 'Markdown', extensions: ['md'] }]
-  })
+    title: 'Create Invoice File',
+    defaultPath: path.join(dir, 'Untitled.json'),
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+    properties: ['showOverwriteConfirmation']
+  });
 
   if (canceled || !filePath) {
-    console.info('Note creation canceled')
-    return false
+    console.info('Invoice creation canceled');
+    return false;
   }
 
-  const { name: filename, dir: parentDir } = path.parse(filePath)
+  await writeFile(filePath, '{}', { encoding: fileEncoding });
 
-  if (parentDir !== rootDir) {
-    await dialog.showMessageBox({
-      type: 'error',
-      title: 'Creation failed',
-      message: `All notes must be saved under ${rootDir}.
-      Avoid using other directories!`
-    })
+  const { name } = path.parse(filePath);
+  return name; // Return just the filename without path or extension
+};
 
-    return false
-  }
-
-  console.info(`Creating note: ${filePath}`)
-  await writeFile(filePath, '')
-
-  return filename
-}
-
-export const deleteNote: DeleteNote = async (filename) => {
-  const rootDir = getRootDir()
+export const deleteInvoice = async (filename: string) => {
+  const filePath = path.join(getRootDir(), `${filename}.json`);
 
   const { response } = await dialog.showMessageBox({
     type: 'warning',
-    title: 'Delete note',
-    message: `Are you sure you want to delete ${filename}?`,
-    buttons: ['Delete', 'Cancel'], // 0 is Delete, 1 is Cancel
+    title: 'Delete Invoice',
+    message: `Are you sure you want to delete invoice "${filename}"?`,
+    buttons: ['Delete', 'Cancel'],
     defaultId: 1,
     cancelId: 1
-  })
+  });
 
-  if (response === 1) {
-    console.info('Note deletion canceled')
-    return false
+  if (response === 0) {
+    await remove(filePath);
+    return true;
   }
 
-  console.info(`Deleting note: ${filename}`)
-  await remove(`${rootDir}/${filename}.md`)
-  return true
-}
+  return false;
+};
