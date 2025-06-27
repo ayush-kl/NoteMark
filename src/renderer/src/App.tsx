@@ -1,12 +1,9 @@
-
-import { useRef } from 'react'
-import InvoicePrintContent from './components/bills/billPharmacy'
+import InvoicePrintContent from './components/bills/returnPharmacyBill'
 
 const App = () => {
-
   return (
     <>
-       <InvoicePrintContent />
+      <InvoicePrintContent />
     </>
   )
 }
