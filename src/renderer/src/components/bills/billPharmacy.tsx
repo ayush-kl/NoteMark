@@ -310,13 +310,13 @@ const InvoiceManager: React.FC = () => {
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
 
   const addNewInvoice = async () => {
-    const title = await window.context.createInvoice();
-    if (!title) return;
+    const id = await window.context.createInvoice();
+    if (!id) return;
 
     const newInvoice: InvoiceData = {
       ...EmptyInvoice,
       items: EmptyInvoice.items.map((item) => ({ ...item })),
-      title,
+      title: id,
     };
 
     setInvoices((prev) => [...prev, newInvoice]);
@@ -339,6 +339,7 @@ const InvoiceManager: React.FC = () => {
     try {
       await window.context.writeInvoice(title, JSON.stringify(invoice, null, 2));
       alert(`Invoice "${title}" saved successfully.`);
+      setInvoices([]); // ✅ Reset to start screen
     } catch (error) {
       console.error("Error saving invoice:", error);
       alert("Failed to save invoice.");
