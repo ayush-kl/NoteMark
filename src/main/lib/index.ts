@@ -11,7 +11,7 @@ export const getRootDir = () => path.join(homedir(), appDirectoryName);
 
 const getMonthFolderName = (date = new Date()) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2); // '24' for 2024
+  const year = String(date.getFullYear()).slice(-2);
   return `${month}-${year}`;
 };
 
@@ -29,16 +29,12 @@ const getMonthDirPath = (date = new Date()) => {
   return path.join(getRootDir(), getMonthFolderName(date));
 };
 
-/**
- * Create and append a new invoice to today's file (~/dawaiInvoices/MM-YY/DD-MM.json)
- */
 export const createInvoice = async (data: any = {}) => {
   const filePath = getInvoiceFilePath();
   const monthDir = getMonthDirPath();
   await ensureDir(monthDir);
 
   let invoices: any[] = [];
-
   try {
     const content = await readFile(filePath, { encoding: fileEncoding });
     invoices = JSON.parse(content);
@@ -50,7 +46,7 @@ export const createInvoice = async (data: any = {}) => {
   const newInvoice = {
     id: `invoice-${timestamp}`,
     createdAt: timestamp,
-    ...data
+    ...data,
   };
 
   invoices.push(newInvoice);
@@ -59,17 +55,16 @@ export const createInvoice = async (data: any = {}) => {
   return newInvoice.id;
 };
 
-/**
- * Overwrite/update an invoice by ID
- */
 export const writeInvoice = async (id: string, content: string) => {
   const root = getRootDir();
   await ensureDir(root);
   const parsedContent = JSON.parse(content);
 
-  const monthDirs = await readdir(root);
-  for (const monthDir of monthDirs) {
-    const monthPath = path.join(root, monthDir);
+  const monthDirs = await readdir(root, { withFileTypes: true });
+  for (const entry of monthDirs) {
+    if (!entry.isDirectory()) continue;
+
+    const monthPath = path.join(root, entry.name);
     try {
       const files = await readdir(monthPath);
       for (const file of files) {
@@ -95,7 +90,6 @@ export const writeInvoice = async (id: string, content: string) => {
     }
   }
 
-  // If not found, append to today's file
   const todayFile = getInvoiceFilePath();
   await ensureDir(path.dirname(todayFile));
   let invoices: any[] = [];
@@ -110,14 +104,15 @@ export const writeInvoice = async (id: string, content: string) => {
   await writeFile(todayFile, JSON.stringify(invoices, null, 2), { encoding: fileEncoding });
 };
 
-/**
- * Read a specific invoice by ID
- */
 export const readInvoice = async (id: string) => {
   try {
-    const monthDirs = await readdir(getRootDir());
-    for (const month of monthDirs) {
-      const monthPath = path.join(getRootDir(), month);
+    const root = getRootDir();
+    const monthDirs = await readdir(root, { withFileTypes: true });
+
+    for (const entry of monthDirs) {
+      if (!entry.isDirectory()) continue;
+
+      const monthPath = path.join(root, entry.name);
       const files = await readdir(monthPath);
       for (const file of files) {
         if (!file.endsWith('.json')) continue;
@@ -139,57 +134,83 @@ export const readInvoice = async (id: string) => {
   return null;
 };
 
-/**
- * Get metadata for all invoices (used for listing)
- */
-export const getInvoices = async (dateStr?: string, filters?: { patientName?: string; mobile?: string }) => {
+// import path from "path";
+// import { readFile } from "fs/promises";
+import { readdirSync, statSync } from "fs";
+// import { getRootDir, fileEncoding } from "./path/to/your/config";
+
+export const getInvoices = async (
+  dateStr?: string,
+  filters?: { patientName?: string; mobile?: string }
+) => {
   const result: { title: string; lastEditTime: number; data: any }[] = [];
 
   try {
     const root = getRootDir();
-    const monthDirs = await readdir(root);
 
-    for (const month of monthDirs) {
-      const monthPath = path.join(root, month);
-      const files = await readdir(monthPath);
+    // Only include folders inside root
+    const monthDirs = readdirSync(root).filter((entry) =>
+      statSync(path.join(root, entry)).isDirectory()
+    );
+
+    for (const folder of monthDirs) {
+      const folderPath = path.join(root, folder);
+
+      const files = readdirSync(folderPath).filter((f) => f.endsWith(".json"));
 
       for (const file of files) {
-        if (!file.endsWith('.json')) continue;
+        // If date is provided, convert it to DD-MM.json
+        if (dateStr) {
+          const date = new Date(dateStr);
+          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const expectedFile = `${day}-${month}.json`;
 
-        if (dateStr && !file.includes(dateStr)) continue; // filter by date
+          if (file !== expectedFile) continue;
+        }
 
-        const filePath = path.join(monthPath, file);
+        const filePath = path.join(folderPath, file);
+
         try {
           const content = await readFile(filePath, { encoding: fileEncoding });
           const invoices = JSON.parse(content);
 
           for (const inv of invoices) {
-            const matchPatient = !filters?.patientName || inv.patientName?.toLowerCase().includes(filters.patientName.toLowerCase());
-            const matchMobile = !filters?.mobile || inv.mobile?.includes(filters.mobile);
+            const patientMatch =
+              !filters?.patientName ||
+              inv.patientName?.toLowerCase().includes(filters.patientName.toLowerCase());
 
-            if (matchPatient && matchMobile) {
+            const mobileMatch =
+              !filters?.mobile || inv.mobile?.includes(filters.mobile);
+
+            if (!filters || (patientMatch && mobileMatch)) {
               result.push({
                 title: inv.id,
-                lastEditTime: inv.createdAt,
-                data: inv
+                lastEditTime: inv.createdAt || 0,
+                data: inv,
               });
             }
           }
-        } catch {
-          continue;
+        } catch (err) {
+          console.error(`Error reading/parsing ${filePath}:`, err);
         }
       }
     }
-  } catch {
+  } catch (err) {
+    console.error("Error reading invoice folders:", err);
     return [];
   }
 
   return result;
 };
 
-/**
- * Delete an invoice by ID (with confirmation dialog)
- */
+// async function main() {
+//   const all = await getInvoices();
+//   console.log("All invoices:", all);
+// }
+
+// main();
+
 export const deleteInvoice = async (id: string) => {
   const { response } = await dialog.showMessageBox({
     type: 'warning',
@@ -197,15 +218,19 @@ export const deleteInvoice = async (id: string) => {
     message: `Are you sure you want to delete invoice "${id}"?`,
     buttons: ['Delete', 'Cancel'],
     defaultId: 1,
-    cancelId: 1
+    cancelId: 1,
   });
 
   if (response !== 0) return false;
 
   try {
-    const monthDirs = await readdir(getRootDir());
-    for (const month of monthDirs) {
-      const monthPath = path.join(getRootDir(), month);
+    const root = getRootDir();
+    const monthDirs = await readdir(root, { withFileTypes: true });
+
+    for (const entry of monthDirs) {
+      if (!entry.isDirectory()) continue;
+
+      const monthPath = path.join(root, entry.name);
       const files = await readdir(monthPath);
 
       for (const file of files) {
