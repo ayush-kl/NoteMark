@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Logo from '../../../../../resources/icon.png'
+import BookingFormManager, { BookingSection } from '../DynamicBooking'
 
 interface InvoiceItem {
   item: string
@@ -137,6 +138,248 @@ const InvoiceForm = ({
 }
 
 const InvoiceManager: React.FC = () => {
+  const supplierSection: BookingSection = {
+    id: 'billPharmacy',
+    allowMultipleEntries: false,
+    title: 'Personal Information',
+    fields: [
+      [
+        {
+          id: 'patientname',
+          label: 'Patient Name',
+          type: 'text',
+          placeholder: 'lorem ipsum',
+          required: true
+        },
+        {
+          id: 'phoneNumber',
+          label: 'Phone Number',
+          required: true,
+          type: 'text',
+          placeholder: '+91 XXXXXXXXXX'
+        },
+        {
+          id: 'address',
+          label: 'Address',
+          required: true,
+          type: 'text',
+          placeholder: 'lorem ipsum'
+        },
+        {
+          id: 'doctorname',
+          label: 'Doctor Name',
+          required: true,
+          type: 'text',
+          placeholder: 'lorem ipsum'
+        }
+      ]
+    ],
+    tableColumns: [
+      { id: 'patientname', header: 'Patient Name', accessor: 'patientname' },
+      { id: 'phoneNumber', header: 'Phone Number', accessor: 'phoneNumber' },
+      { id: 'address', header: 'Address', accessor: 'address' },
+      { id: 'doctorname', header: 'Doctor Name', accessor: 'doctorname' }
+    ],
+    initialFormState: {
+      patientname: '',
+      phoneNumber: '',
+      address: '',
+      doctorname: ''
+    },
+    validation: (formData) => {
+      if (!formData.patientname) return 'Patient name is required'
+      if (!formData.phoneNumber) return 'Phone Number is required'
+      if (!formData.address) return 'Address is required'
+      if (!formData.doctorname) return 'Doctor Name is required'
+      return null
+    }
+  }
+
+  const itemSection: BookingSection = {
+    id: 'item',
+    allowMultipleEntries: true,
+    title: 'Item Information',
+    fields: [
+      [
+        {
+          id: 'itemName',
+          label: 'Item Name',
+          type: 'text',
+          placeholder: 'Lorem Ipsum',
+          required: false
+        },
+        {
+          id: 'qty',
+          label: 'Quantity',
+          type: 'text',
+          placeholder: 'Quantity',
+          required: true,
+          pattern: '[0-9]*',
+          inputMode: 'numeric'
+        },
+        {
+          id: 'hsn',
+          label: 'HSN',
+          type: 'text',
+          placeholder: 'XX',
+          required: true
+        },
+        {
+          id: 'batch',
+          label: 'Batch',
+          type: 'text',
+          placeholder: 'XXXXX',
+          required: true
+        },
+        {
+          id: 'expiry',
+          label: 'Expiry',
+          type: 'date',
+          placeholder: 'DD-MM-YYYY',
+          required: true
+        }
+      ],
+      [
+        {
+          id: 'mrp',
+          label: 'MRP',
+          type: 'text',
+          placeholder: 'XXX',
+          required: true,
+          pattern: '[0-9]*',
+          inputMode: 'numeric'
+        },
+        {
+          id: 'gst',
+          label: 'GST %',
+          type: 'text',
+          placeholder: 'XX',
+          required: true,
+          pattern: '[0-9]*',
+          inputMode: 'numeric'
+        },
+        {
+          id: 'discount',
+          label: 'Discount %',
+          type: 'text',
+          placeholder: 'XX',
+          required: true,
+          pattern: '[0-9]*',
+          inputMode: 'numeric'
+        },
+        {
+          id: 'total',
+          label: 'Total',
+          type: 'text',
+          placeholder: 'XXX',
+          required: true,
+          pattern: '[0-9]*',
+          inputMode: 'numeric'
+        }
+      ]
+    ],
+    tableColumns: [
+      { id: 'itemName', header: 'Item Name', accessor: 'itemName' },
+      { id: 'qty', header: 'Quantity', accessor: 'qty' },
+      { id: 'hsn', header: 'HSN', accessor: 'hsn' },
+      { id: 'batch', header: 'Batch', accessor: 'batch' },
+      { id: 'expiry', header: 'Expiry', accessor: 'expiry' },
+      { id: 'mrp', header: 'MRP', accessor: 'mrp' },
+      { id: 'gst', header: 'GST %', accessor: 'gst' },
+      { id: 'discount', header: 'Discount %', accessor: 'discount' },
+      { id: 'total', header: 'Total', accessor: 'total' }
+    ],
+    initialFormState: {
+      itemName: '',
+      qty: '',
+      hsn: '',
+      batch: '',
+      expiry: '',
+      mrp: '',
+      gst: '',
+      discount: ''
+    },
+    validation: (formData) => {
+      if (!formData.itemName) return 'Item name is required'
+      if (!formData.qty) return 'Quantity is required'
+      if (!formData.hsn) return 'HSN is required'
+      if (!formData.batch) return 'Batch is required'
+      if (!formData.expiry) return 'Expiry is required'
+      if (!formData.mrp) return 'MRP is required'
+      if (!formData.gst) return 'GST is required'
+      return null
+    }
+  }
+
+  const paymentSection: BookingSection = {
+    id: 'payment',
+    allowMultipleEntries: false,
+    title: 'Payment Information',
+    showMemberToggle: true,
+    fields: [
+      [
+        {
+          id: 'paidAmount',
+          label: 'Amount Paid',
+          type: 'text',
+          placeholder: 'Enter amount',
+          required: true,
+          inputMode: 'numeric',
+          pattern: '[0-9]*'
+        },
+        {
+          id: 'paymentMode',
+          label: 'Payment Method',
+          type: 'select',
+          options: [
+            { value: '', label: 'Select' },
+            { value: 'Card', label: 'Card' },
+            { value: 'UPI', label: 'UPI' },
+            { value: 'Net Banking', label: 'Net Banking' }
+          ]
+        },
+
+        {
+          id: 'totalDiscount',
+          label: 'Total Discount',
+          type: 'text',
+          placeholder: '0',
+          required: true
+        },
+        {
+          id: 'totalbill',
+          label: 'Total Bill',
+          type: 'text',
+          placeholder: '0',
+          required: true
+        },
+        {
+          id: 'outstandingAmt',
+          label: 'Outstanding Amount',
+          type: 'text',
+          placeholder: '0',
+          required: true
+        }
+      ]
+    ],
+    tableColumns: [
+      { id: 'paidAmount', header: 'Amount Paid', accessor: 'paidAmount' },
+      { id: 'paymentMode', header: 'Payment Mode', accessor: 'paymentMode' },
+      { id: 'totalDiscount', header: 'Total Discount', accessor: 'totalDiscount' },
+      { id: 'totalBill', header: 'Total Bill', accessor: 'totalBill' },
+      { id: 'outstandingAmt', header: 'Outstanding Amount', accessor: 'outstandingAmt' }
+    ],
+    initialFormState: {
+      paidAmount: '',
+      paymentMode: '',
+      paymentStatus: ''
+    },
+    validation: (formData) => {
+      if (!formData.paidAmount) return 'Paid amount is required'
+      return null
+    }
+  }
+
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
 
   const [searchDate, setSearchDate] = useState('')
@@ -203,28 +446,17 @@ const InvoiceManager: React.FC = () => {
   return (
     <div className="p-4">
       {/* Search Inputs */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Date (YYYY-MM-DD)"
-          className="border px-2 py-1 rounded-md"
-          value={searchDate}
-          onChange={(e) => setSearchDate(e.target.value)}
+      <div className=" pt-4">
+        {/* Booking Form Manager */}
+        <BookingFormManager
+          bookingType="Consultation"
+          sections={[supplierSection, itemSection, paymentSection]}
+          hideDefaultHeader={true}
+          showPatientId={true}
+          is_existing_patient={'old'}
+          item_name={''}
         />
-        <input
-          type="text"
-          placeholder="Patient Name"
-          className="border px-2 py-1 rounded-md"
-          value={searchPatient}
-          onChange={(e) => setSearchPatient(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Mobile"
-          className="border px-2 py-1 rounded-md"
-          value={searchMobile}
-          onChange={(e) => setSearchMobile(e.target.value)}
-        />
+
         <button
           onClick={getFilteredInvoices}
           className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-gray-900"

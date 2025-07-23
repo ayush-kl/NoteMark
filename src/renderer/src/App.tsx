@@ -1,9 +1,9 @@
-import InvoicePrintContent from './components/bills/billPharmacy'
+import InvoiceManager from './components/bills/billPharmacy'
 
 const App = () => {
   return (
     <>
-      <InvoicePrintContent />
+      <InvoiceManager />
     </>
   )
 }
