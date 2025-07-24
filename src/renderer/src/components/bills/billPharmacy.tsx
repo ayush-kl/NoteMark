@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import Logo from '../../../../../resources/icon.png'
 import BookingFormManager, { BookingSection } from '../DynamicBooking'
-
 interface InvoiceItem {
   item: string
   quantity: string
@@ -93,51 +92,6 @@ const InvoiceForm = ({
   const handleFieldChange = (field: keyof InvoiceData, value: string) => {
     onChange({ ...invoice, [field]: value })
   }
-
-  return (
-    <div className="border-2 border-gray-300 rounded-md w-full max-w-full p-4 mb-8">
-      <div className="text-[10px]">
-        <div className="text-center">
-          <h1 className="text-lg font-bold underline">Sales Invoice</h1>
-        </div>
-
-        <div className="grid grid-cols-3 mt-2">
-          <div>
-            <p className="text-xs font-semibold">Date:</p>
-            <input
-              className="border px-2 py-1 rounded-md text-xs"
-              value={invoice.date}
-              onChange={(e) => handleFieldChange('date', e.target.value)}
-            />
-            <p className="text-xs font-semibold mt-2">Invoice No:</p>
-            <input
-              className="border px-2 py-1 rounded-md text-xs"
-              value={invoice.invoiceNo}
-              onChange={(e) => handleFieldChange('invoiceNo', e.target.value)}
-            />
-          </div>
-          <div />
-          <div className="flex justify-end items-start">
-            <img src={Logo} alt="Logo" width={70} height={70} />
-            <span className="font-semibold text-xl ml-2">NEXUS</span>
-          </div>
-        </div>
-
-        {/* Add rest of form fields... */}
-        {/* You already have the full form UI, so I'm omitting it here to focus on integration */}
-
-        <button
-          onClick={onSave}
-          className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          Save Invoice
-        </button>
-      </div>
-    </div>
-  )
-}
-
-const InvoiceManager: React.FC = () => {
   const supplierSection: BookingSection = {
     id: 'billPharmacy',
     allowMultipleEntries: false,
@@ -366,7 +320,7 @@ const InvoiceManager: React.FC = () => {
       { id: 'paidAmount', header: 'Amount Paid', accessor: 'paidAmount' },
       { id: 'paymentMode', header: 'Payment Mode', accessor: 'paymentMode' },
       { id: 'totalDiscount', header: 'Total Discount', accessor: 'totalDiscount' },
-      { id: 'totalBill', header: 'Total Bill', accessor: 'totalBill' },
+      { id: 'totalbill', header: 'Total Bill', accessor: 'totalbill' },
       { id: 'outstandingAmt', header: 'Outstanding Amount', accessor: 'outstandingAmt' }
     ],
     initialFormState: {
@@ -380,6 +334,58 @@ const InvoiceManager: React.FC = () => {
     }
   }
 
+  return (
+    <div className="border-2 border-gray-300 rounded-md w-full max-w-full p-4 mb-8">
+      <div className="text-[10px]">
+        <div className="text-center">
+          <h1 className="text-lg font-bold underline">Sales Invoice</h1>
+        </div>
+
+        <div className="grid grid-cols-3 mt-2">
+          <div>
+            <p className="text-xs font-semibold">Date:</p>
+            <input
+              className="border px-2 py-1 rounded-md text-xs"
+              value={invoice.date}
+              onChange={(e) => handleFieldChange('date', e.target.value)}
+            />
+            <p className="text-xs font-semibold mt-2">Invoice No:</p>
+            <input
+              className="border px-2 py-1 rounded-md text-xs"
+              value={invoice.invoiceNo}
+              onChange={(e) => handleFieldChange('invoiceNo', e.target.value)}
+            />
+          </div>
+          <div />
+          <div className="flex justify-end items-start">
+            <img src={Logo} alt="Logo" width={70} height={70} />
+            <span className="font-semibold text-xl ml-2">NEXUS</span>
+          </div>
+        </div>
+
+        {/* Add rest of form fields... */}
+        {/* You already have the full form UI, so I'm omitting it here to focus on integration */}
+
+        <button
+          onClick={onSave}
+          className="mt-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          Save Invoice
+        </button>
+      </div>
+      <BookingFormManager
+        bookingType="Consultation"
+        sections={[supplierSection, itemSection, paymentSection]}
+        hideDefaultHeader={true}
+        showPatientId={true}
+        is_existing_patient={'old'}
+        item_name={''}
+      />
+    </div>
+  )
+}
+
+const InvoiceManager: React.FC = () => {
   const [invoices, setInvoices] = useState<InvoiceData[]>([])
 
   const [searchDate, setSearchDate] = useState('')
@@ -448,14 +454,6 @@ const InvoiceManager: React.FC = () => {
       {/* Search Inputs */}
       <div className=" pt-4">
         {/* Booking Form Manager */}
-        <BookingFormManager
-          bookingType="Consultation"
-          sections={[supplierSection, itemSection, paymentSection]}
-          hideDefaultHeader={true}
-          showPatientId={true}
-          is_existing_patient={'old'}
-          item_name={''}
-        />
 
         <button
           onClick={getFilteredInvoices}
